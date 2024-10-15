@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Coding Collaboration</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        textarea { width: 100%; height: 300px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Collaborative Coding</h1>
+    <textarea id="codeArea"></textarea>
+    <p>Status: <span id="status">Disconnected</span></p>
+
+    <script>
+        const codeArea = document.getElementById('codeArea');
+        const statusSpan = document.getElementById('status');
+
+        // Create WebSocket connection.
+        const socket = new WebSocket('ws://localhost:8080/ws?room=room1&clientID=client1');
+
+        // Connection opened
+        socket.addEventListener('open', function () {
+            statusSpan.textContent = 'Connected';
+        });
+
+        // Listen for incoming messages
+        socket.addEventListener('message', function (event) {
+            const data = event.data;
+            // Update the code area with the received message
+            codeArea.value = data;
+        });
+
+        // Send code updates when user types
+        codeArea.addEventListener('input', function () {
+            const code = codeArea.value;
+            socket.send(code); // Send the code updates to the WebSocket server
+        });
+
+        // Handle connection close
+        socket.addEventListener('close', function () {
+            statusSpan.textContent = 'Disconnected';
+        });
+    </script>
+</body>
+</html>
