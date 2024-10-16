@@ -40,7 +40,7 @@
         const data = JSON.parse(event.data);
         if (data && data.content) {
             // Update the editor only if the change comes from another client
-            if (data.clientID !== 'client2') {
+            if (data.clientID !== 'client1') {
                 isExternalUpdate = true;
                 updateEditorContent(data.content);
             }
