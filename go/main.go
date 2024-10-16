@@ -1,6 +1,7 @@
 package main
 
 import (
+	"demo/db"
 	"demo/ws"
 	"fmt"
 	"log"
@@ -10,7 +11,7 @@ import (
 )
 
 func main() {
-
+	db.ConnectRedis()
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
