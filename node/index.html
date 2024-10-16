@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collaborative Code Editor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #editor {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre;
+      overflow-y: auto;
+    }
+    #status {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Collaborative Code Editor</h1>
+  
+  <div id="editor" contenteditable="true"></div>
+  
+  <div id="status">Connecting...</div>
+
+  <script>
+    const roomID = 'room1'; // Example room ID for collaboration
+    const clientID = 'client1'; // Client ID to uniquely identify this user (can be dynamically set)
+
+    const ws = new WebSocket(`ws://localhost:8080/?room=${roomID}&clientID=${clientID}`);
+
+    const editor = document.getElementById('editor');
+    const statusDiv = document.getElementById('status');
+
+    // Set status message
+    function setStatus(message) {
+      statusDiv.textContent = message;
+    }
+
+    // Update editor with new content
+    function updateEditorContent(newContent) {
+      editor.textContent = newContent;
+    }
+
+    // When WebSocket connection is open
+    ws.onopen = function() {
+      setStatus('Connected');
+    };
+
+    // When a message is received (this could be the updated code from another client)
+    ws.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      if (data.type === 'update') {
+        updateEditorContent(data.content);
+      }
+    };
+
+    // When WebSocket connection is closed
+    ws.onclose = function() {
+      setStatus('Disconnected');
+    };
+
+    // When an error occurs
+    ws.onerror = function(error) {
+      setStatus('Error: ' + error.message);
+    };
+
+    // Send changes to the WebSocket server whenever the content is updated locally
+    editor.addEventListener('input', function() {
+      const content = editor.textContent; // Get current code content
+      ws.send(JSON.stringify({
+        type: 'update',
+        content: content
+      }));
+    });
+
+  </script>
+
+</body>
+</html>

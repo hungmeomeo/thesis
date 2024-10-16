@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Collaborative Code Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #editor {
+            height: 500px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Real-Time Collaborative Code Editor</h1>
+<p>Edit the code below, and changes will be broadcast to all connected clients in real-time.</p>
+
+<div id="editor"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.js"></script>
+
+<script>
+    let isExternalUpdate = false;  // Flag to track external changes
+
+    // Initialize WebSocket
+    const socket = new WebSocket('ws://localhost:8080/ws?room=room1&clientID=client1');
+
+    socket.onopen = function() {
+        console.log("WebSocket is open now.");
+    };
+
+    socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        if (data && data.content) {
+            // Update the editor only if the change comes from another client
+            if (data.clientID !== 'client2') {
+                isExternalUpdate = true;
+                updateEditorContent(data.content);
+            }
+        }
+    };
+
+    socket.onclose = function() {
+        console.log("WebSocket is closed now.");
+    };
+
+    socket.onerror = function(error) {
+        console.log("WebSocket error:", error);
+    };
+
+    // Initialize CodeMirror editor
+    const editor = CodeMirror(document.getElementById("editor"), {
+        mode: "javascript",
+        lineNumbers: true,
+        value: "// Start typing your code here...",
+    });
+
+    // Detect changes in the editor and send them to the WebSocket server
+    editor.on("change", function(cm, change) {
+        if (!isExternalUpdate) {
+            const content = cm.getValue();
+            const message = {
+                clientID: "client1", // Example client ID
+                content: content
+            };
+            socket.send(JSON.stringify(message));
+        }
+
+        // Reset the external update flag after processing the change
+        isExternalUpdate = false;
+    });
+
+    // Function to update the editor content without disrupting the user's position
+    function updateEditorContent(newContent) {
+        const currentContent = editor.getValue();
+        if (currentContent !== newContent) {
+            const cursorPos = editor.getCursor();  // Save the current cursor position
+            editor.setValue(newContent);  // Replace editor content with the new content
+            editor.setCursor(cursorPos);  // Restore the cursor position
+        }
+    }
+</script>
+
+</body>
+</html>
