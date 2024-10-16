@@ -13,7 +13,7 @@ type Room struct {
 }
 
 // NewRoom creates and returns a new room with allowed clients
-func NewRoom(allowedClients []string) *Room {
+func NewRoom(ID string, allowedClients []string) *Room {
 	allowedClientsMap := make(map[string]bool)
 	for _, clientID := range allowedClients {
 		allowedClientsMap[clientID] = true
