@@ -1,26 +1,69 @@
 package ws
 
-// Room represents a chat room where clients can communicate
+import "log"
+
 type Room struct {
-	AllowedClients map[string]bool // List of allowed client IDs
+	ID             string
 	Clients        map[*Client]bool
-	Broadcast      chan []byte
+	AllowedClients map[string]bool // Tracks allowed clients
 	Register       chan *Client
 	Unregister     chan *Client
+	Broadcast      chan []byte
+	stop           chan bool
 }
 
-// NewRoom initializes and returns a new room with allowed client IDs
+// NewRoom creates and returns a new room with allowed clients
 func NewRoom(allowedClients []string) *Room {
-	clientMap := make(map[string]bool)
-	for _, id := range allowedClients {
-		clientMap[id] = true
+	allowedClientsMap := make(map[string]bool)
+	for _, clientID := range allowedClients {
+		allowedClientsMap[clientID] = true
 	}
 
 	return &Room{
-		AllowedClients: clientMap,
 		Clients:        make(map[*Client]bool),
-		Broadcast:      make(chan []byte),
+		AllowedClients: allowedClientsMap,
 		Register:       make(chan *Client),
 		Unregister:     make(chan *Client),
+		Broadcast:      make(chan []byte),
+		stop:           make(chan bool),
 	}
+}
+
+// Run starts the room to handle registering, unregistering, and broadcasting messages
+func (room *Room) Run() {
+	for {
+		select {
+		case client := <-room.Register:
+			room.Clients[client] = true
+			log.Printf("Client joined room %s", room.ID)
+		case client := <-room.Unregister:
+			if _, ok := room.Clients[client]; ok {
+				delete(room.Clients, client)
+				close(client.Send)
+				log.Printf("Client left room %s", room.ID)
+			}
+		case message := <-room.Broadcast:
+			for client := range room.Clients {
+				select {
+				case client.Send <- message:
+				default:
+					close(client.Send)
+					delete(room.Clients, client)
+				}
+			}
+		case <-room.stop:
+			// Clean up when the room is stopped
+			for client := range room.Clients {
+				close(client.Send)
+				delete(room.Clients, client)
+			}
+			log.Printf("Room %s stopped", room.ID)
+			return
+		}
+	}
+}
+
+// Stop gracefully stops the room's loop
+func (room *Room) Stop() {
+	room.stop <- true
 }

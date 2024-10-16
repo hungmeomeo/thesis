@@ -9,8 +9,8 @@ import (
 
 // Upgrader configures the WebSocket connection
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
+	ReadBufferSize:  8192,
+	WriteBufferSize: 8192,
 	CheckOrigin: func(r *http.Request) bool {
 		return true // Allow all connections for simplicity
 	},
@@ -36,10 +36,11 @@ func HandleWebSocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	// Ensure the room exists in the hub
 	room, exists := hub.Rooms[roomID]
 	if !exists {
+		// Create a new room with an allowed clients list
 		allowedClients := []string{"client1", "client2", "client3"} // Modify as needed
 		room = NewRoom(allowedClients)
 		hub.Rooms[roomID] = room
-		go hub.Run()
+		go room.Run() // Start the room's goroutine, not the hub's
 	}
 
 	// Check if the client ID is allowed to join the room
@@ -49,6 +50,7 @@ func HandleWebSocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create and register a new client
 	client := &Client{
 		Conn:   conn,
 		Hub:    hub,
