@@ -1,6 +1,8 @@
 package ws
 
 import (
+	//"demo/db"
+
 	"encoding/json"
 	"log"
 
@@ -61,5 +63,16 @@ func (c *Client) Write() {
 			log.Println("Write error:", err)
 			break
 		}
+
+		// Unmarshal the message directly here
+		var msg Message
+		if err := json.Unmarshal(message, &msg); err != nil {
+			log.Println("Error unmarshalling message:", err)
+			continue // Skip logging if unmarshalling fails
+		}
+
+		// Log the content correctly
+		log.Printf("Sent message to client %s, code is %s", c.RoomID, msg.Content)
+		//codeMap.AddCode(msg.Content, c.RoomID)
 	}
 }

@@ -38,7 +38,7 @@ func HandleWebSocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	if !exists {
 		// Create a new room with an allowed clients list
 		allowedClients := []string{"client1", "client2", "client3"} // Modify as needed
-		room = NewRoom(allowedClients)
+		room = NewRoom(roomID, allowedClients)
 		hub.Rooms[roomID] = room
 		go room.Run() // Start the room's goroutine, not the hub's
 	}
