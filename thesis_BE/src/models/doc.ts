@@ -1,25 +1,40 @@
 import { Operation, OperationType } from "./operation";
 import { User } from "./user";
+import { getDocumentText, setDocumentText } from "../db/redis";
 
 export class Doc {
   docId: string;
-  documentText: string;
+  documentText: string | null; // Allow documentText to be null
   users: User[];
   operationQueue: Operation[];
 
   constructor(docId: string) {
     this.docId = docId;
-    this.documentText = "";
+    this.documentText = null; // Initialize as null
     this.users = [];
     this.operationQueue = [];
   }
 
-  addUser(user: User) {
+  async addUser(user: User) {
+    if (this.users.length === 0) {
+      try {
+        const text = await getDocumentText(this.docId);
+        console.log("Document text loaded from cache:", text);
+        this.documentText = text !== null ? text : "";
+        console.log(this.documentText);
+      } catch (error) {
+        console.error("Error loading caching", error);
+      }
+    }
+
     this.users.push(user);
   }
 
   removeUser(userId: string) {
     this.users = this.users.filter((user) => user.userId !== userId);
+    if (this.users.length === 0) {
+      setDocumentText(this.docId, this.documentText ?? "");
+    }
   }
 
   queueOperation(operation: Operation): void {
@@ -29,7 +44,7 @@ export class Doc {
 
   private processQueue(): void {
     const operationsToProcess = [...this.operationQueue];
-    this.operationQueue = [];
+    this.operationQueue = []; // Clear the queue for new operations
 
     operationsToProcess.forEach((operation) => {
       const transformedOperation = this.transformOperation(operation);
@@ -43,18 +58,19 @@ export class Doc {
     switch (type) {
       case OperationType.INSERT:
         this.documentText =
-          this.documentText.slice(0, position) +
+          (this.documentText ?? "").slice(0, position) +
           text +
-          this.documentText.slice(position);
+          (this.documentText ?? "").slice(position);
         break;
       case OperationType.DELETE:
         this.documentText =
-          this.documentText.slice(0, position) +
-          this.documentText.slice(position + text.length);
+          (this.documentText ?? "").slice(0, position) +
+          (this.documentText ?? "").slice(position + text.length);
         break;
       default:
         throw new Error("Unknown operation type");
     }
+
     console.log(this.operationQueue);
   }
 
@@ -66,7 +82,7 @@ export class Doc {
     this.operationQueue = [];
   }
 
-  getConnectedUsers() {
+  getConnectedUsers(): User[] {
     return [...this.users];
   }
 }

@@ -1,4 +1,3 @@
-// models/operation.ts
 export enum OperationType {
   INSERT = "insert",
   DELETE = "delete",
@@ -6,7 +5,7 @@ export enum OperationType {
 
 export class Operation {
   type: OperationType;
-  position: number; // The position in the document where the operation takes place
+  position: number;
   text: string;
   timestamp: number;
 

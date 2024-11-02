@@ -1,9 +1,12 @@
 import { createClient } from "redis";
-
-const REDIS_URL = "your_redis_cloud_url"; // Replace with your Redis Cloud URL
+import Redis from "ioredis";
 
 const redisClient = createClient({
-  url: REDIS_URL,
+  password: "KVooN6vZln5pZYCEk0jILJOlUCX7sryQ",
+  socket: {
+    host: "redis-17059.c295.ap-southeast-1-1.ec2.redns.redis-cloud.com",
+    port: 17059,
+  },
 });
 
 redisClient.on("error", (err: string) => {

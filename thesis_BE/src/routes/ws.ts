@@ -21,11 +21,22 @@ export function websocketHandler(ws: WebSocket, req: any): void {
   }
 
   const doc = docs[docId];
-  doc.addUser(user);
+  (async () => {
+    await doc.addUser(user);
 
-  console.log(`User ${userId} connected to document ${docId}`);
+    console.log(`User ${userId} connected to document ${docId}`);
 
-  ws.send(JSON.stringify({ content: doc.documentText }));
+    wss.clients.forEach((client) => {
+      if (
+        client.readyState === WebSocket.OPEN &&
+        (client as any).docId === docId
+      ) {
+        client.send(doc.users ? JSON.stringify(doc.users) : "[]");
+      }
+    });
+
+    ws.send(JSON.stringify({ content: doc.documentText }));
+  })();
 
   ws.on("message", (message: string) => {
     console.log(`Received message from ${userId}: ${message}`);
@@ -57,6 +68,13 @@ export function websocketHandler(ws: WebSocket, req: any): void {
 
   ws.on("close", () => {
     doc.removeUser(userId);
-    console.log(`User ${userId} disconnected from document ${docId}`);
+    wss.clients.forEach((client) => {
+      if (
+        client.readyState === WebSocket.OPEN &&
+        (client as any).docId === docId
+      ) {
+        client.send(doc.users ? JSON.stringify(doc.users) : "[]");
+      }
+    });
   });
 }
