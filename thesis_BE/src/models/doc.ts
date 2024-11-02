@@ -4,14 +4,12 @@ import { User } from "./user";
 export class Doc {
   docId: string;
   documentText: string;
-  operationHistory: Operation[];
   users: User[];
-  operationQueue: Operation[]; // Queue to store operations
+  operationQueue: Operation[];
 
   constructor(docId: string) {
     this.docId = docId;
     this.documentText = "";
-    this.operationHistory = [];
     this.users = [];
     this.operationQueue = [];
   }
@@ -24,29 +22,21 @@ export class Doc {
     this.users = this.users.filter((user) => user.userId !== userId);
   }
 
-  // Add an operation to the queue
   queueOperation(operation: Operation): void {
     this.operationQueue.push(operation);
     this.processQueue();
   }
 
-  // Process the operation queue
   private processQueue(): void {
-    while (this.operationQueue.length > 0) {
-      const operation = this.operationQueue.shift()!;
+    const operationsToProcess = [...this.operationQueue];
+    this.operationQueue = [];
 
-      // Transform operation if necessary
+    operationsToProcess.forEach((operation) => {
       const transformedOperation = this.transformOperation(operation);
-
-      // Apply the transformed operation to the document
       this.applyOperation(transformedOperation);
-
-      // Store the operation in the history
-      this.operationHistory.push(transformedOperation);
-    }
+    });
   }
 
-  // Apply an individual operation (already transformed)
   private applyOperation(operation: Operation): void {
     const { type, position, text } = operation;
 
@@ -65,48 +55,17 @@ export class Doc {
       default:
         throw new Error("Unknown operation type");
     }
+    console.log(this.operationQueue);
   }
 
   private transformOperation(newOp: Operation): Operation {
-    // For each operation in the history, transform the new operation to avoid conflicts
-    for (let i = 0; i < this.operationHistory.length; i++) {
-      const historyOp = this.operationHistory[i];
-
-      if (
-        historyOp.type === OperationType.INSERT &&
-        newOp.type === OperationType.INSERT
-      ) {
-        if (historyOp.position <= newOp.position) {
-          newOp.position += historyOp.text.length;
-        }
-      } else if (
-        historyOp.type === OperationType.DELETE &&
-        newOp.type === OperationType.INSERT
-      ) {
-        if (historyOp.position < newOp.position) {
-          newOp.position -= historyOp.text.length;
-        }
-      } else if (
-        historyOp.type === OperationType.INSERT &&
-        newOp.type === OperationType.DELETE
-      ) {
-        if (historyOp.position <= newOp.position) {
-          newOp.position += historyOp.text.length;
-        }
-      } else if (
-        historyOp.type === OperationType.DELETE &&
-        newOp.type === OperationType.DELETE
-      ) {
-        if (historyOp.position < newOp.position) {
-          newOp.position -= historyOp.text.length;
-        }
-      }
-    }
-
     return newOp;
   }
 
-  // Get connected users
+  clearQueue(): void {
+    this.operationQueue = [];
+  }
+
   getConnectedUsers() {
     return [...this.users];
   }
