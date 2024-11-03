@@ -1,5 +1,4 @@
 import { createClient } from "redis";
-import Redis from "ioredis";
 
 const redisClient = createClient({
   password: "KVooN6vZln5pZYCEk0jILJOlUCX7sryQ",

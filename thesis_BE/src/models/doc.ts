@@ -3,12 +3,14 @@ import { User } from "./user";
 import { getDocumentText, setDocumentText } from "../db/redis";
 
 export class Doc {
+  docName: string;
   docId: string;
   documentText: string | null; // Allow documentText to be null
   users: User[];
   operationQueue: Operation[];
 
   constructor(docId: string) {
+    this.docName = "";
     this.docId = docId;
     this.documentText = null; // Initialize as null
     this.users = [];
@@ -16,17 +18,6 @@ export class Doc {
   }
 
   async addUser(user: User) {
-    if (this.users.length === 0) {
-      try {
-        const text = await getDocumentText(this.docId);
-        console.log("Document text loaded from cache:", text);
-        this.documentText = text !== null ? text : "";
-        console.log(this.documentText);
-      } catch (error) {
-        console.error("Error loading caching", error);
-      }
-    }
-
     this.users.push(user);
   }
 
