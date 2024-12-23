@@ -18,6 +18,16 @@ export class Doc {
   }
 
   async addUser(user: User) {
+    if (this.users.length === 0) {
+      try {
+        const text = await getDocumentText(this.docId);
+        console.log("Document text loaded from cache:", text);
+        this.documentText = text !== null ? text : "";
+        console.log(this.documentText);
+      } catch (error) {
+        console.error("Error loading caching", error);
+      }
+    }
     this.users.push(user);
   }
 

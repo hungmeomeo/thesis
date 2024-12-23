@@ -8,5 +8,5 @@ export const app = express();
 export const server = http.createServer(app);
 export const wss = new WebSocket.Server({ server });
 
-connectRedis();
+//connectRedis();
 wss.on("connection", websocketHandler);
